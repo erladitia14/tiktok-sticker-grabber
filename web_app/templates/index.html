@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>TikTok Sticker Downloader - Unduh Stiker Komen TikTok Gratis</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="brand">
+        <div class="logo-badge">TT</div>
+        <div>
+          <h1>TikTok Sticker Downloader</h1>
+          <p class="subtitle">Unduh stiker & reaksi gambar dari komentar TikTok tanpa login</p>
+        </div>
+      </div>
+      <div class="header-badges">
+        <span class="badge-free">100% Gratis</span>
+      </div>
+    </header>
+
+    <!-- Main Extractor Panel -->
+    <main class="panel">
+      <div class="input-card">
+        <label for="tiktok-url" class="input-label">Tautan Video TikTok</label>
+        <div class="input-group">
+          <input 
+            type="text" 
+            id="tiktok-url" 
+            placeholder="Tempel link video TikTok di sini..." 
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <button class="btn btn-secondary btn-paste" onclick="pasteFromClipboard()" title="Tempel dari Clipboard">
+            📋 <span class="hide-on-mobile">Tempel</span>
+          </button>
+          <button class="btn btn-primary" id="btn-extract" onclick="startExtraction()">
+            <span id="btn-text">Cari Stiker</span>
+            <span class="spinner" id="btn-spinner"></span>
+          </button>
+        </div>
+
+        <div class="options-row">
+          <div class="scroll-select">
+            <span>Kedalaman Komentar:</span>
+            <select id="opt-scrolls">
+              <option value="3">Standar (~20 Komen)</option>
+              <option value="6" selected>Banyak (~50 Komen)</option>
+              <option value="12">Semua (~100+ Komen)</option>
+            </select>
+          </div>
+          <div class="server-status-tag">
+            🟢 Server Aktif
+          </div>
+        </div>
+      </div>
+
+      <!-- Results Toolbar -->
+      <div class="results-header" id="results-header" style="display: none;">
+        <div class="count-badge">
+          Ditemukan: <b id="result-count">0</b> stiker
+        </div>
+        <div class="results-actions">
+          <button class="btn btn-secondary btn-sm" onclick="selectAll(true)">Pilih Semua</button>
+          <button class="btn btn-secondary btn-sm" onclick="selectAll(false)">Batal</button>
+          <button class="btn btn-accent btn-sm hide-on-mobile" id="btn-download-top" onclick="downloadSelectedZip()">
+            📦 Unduh Semua (.ZIP)
+          </button>
+        </div>
+      </div>
+
+      <!-- Initial / Loading / Error Status -->
+      <div class="status-card" id="status-card">
+        <div class="status-icon" id="status-icon">🎁</div>
+        <h3 id="status-title">Tempel link video TikTok di atas</h3>
+        <p id="status-desc">Masukkan link video publik yang memiliki stiker di kolom komentarnya. Sistem otomatis mengekstrak semua stiker untuk kamu unduh.</p>
+      </div>
+
+      <!-- Gallery Grid -->
+      <div class="gallery-grid" id="gallery-grid" style="display: none;"></div>
+    </main>
+
+    <!-- Sticky Mobile Floating Download Bar -->
+    <div class="mobile-sticky-bar" id="mobile-sticky-bar" style="display: none;">
+      <div class="sticky-info">
+        <span id="mobile-selected-count">0</span> stiker terpilih
+      </div>
+      <button class="btn btn-accent btn-sm" id="btn-download-mobile" onclick="downloadSelectedZip()">
+        📦 Unduh (.ZIP)
+      </button>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <span>TikTok Sticker Downloader &bull; Tanpa Aplikasi & Login</span>
+      <span>Cepat & Aman</span>
+    </footer>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

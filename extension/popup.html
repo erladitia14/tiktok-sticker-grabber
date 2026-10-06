@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>TikTok Sticker Grabber</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      width: 320px;
+      padding: 16px;
+      background: #121216;
+      color: #efeff1;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 13px;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .header img {
+      width: 28px;
+      height: 28px;
+    }
+    .header h2 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .guide {
+      background: #1a1b23;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .guide ol {
+      padding-left: 18px;
+      line-height: 1.6;
+      color: #a5a6b0;
+    }
+    .guide li b {
+      color: #25f4ee;
+    }
+    .btn {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      background: #FE2C55;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background 0.15s;
+    }
+    .btn:hover {
+      background: #e02449;
+    }
+    .footer {
+      margin-top: 12px;
+      text-align: center;
+      font-size: 11px;
+      color: #636573;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <img src="icon48.png" alt="icon" />
+    <h2>TikTok Sticker Grabber</h2>
+  </div>
+
+  <div class="guide">
+    <ol>
+      <li>Buka video TikTok di browser.</li>
+      <li>Buka <b>kolom komentar</b>.</li>
+      <li>Klik tombol mengambang <b>"🎁 Stiker Komen"</b> di pojok kanan bawah.</li>
+      <li>Gunakan <b>Auto Scroll</b> lalu unduh semua stiker via <b>.ZIP</b>!</li>
+    </ol>
+  </div>
+
+  <button class="btn" id="open-tiktok-btn">
+    🚀 Buka TikTok Sekarang
+  </button>
+
+  <div class="footer">
+    MVP v1.0.0 &bull; Running Local in Browser
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

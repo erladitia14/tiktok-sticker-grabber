@@ -1,0 +1,45 @@
+# ===== Credentials & secrets (JANGAN PERNAH DI-PUSH) =====
+auth.json
+*.auth.json
+cookies.json
+session.json
+.env
+.env.*
+*.pem
+*.key
+*.p12
+secrets.json
+credentials.json
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ===== Hermes / local tooling =====
+.hermes/
+
+# ===== OS / Editor =====
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+*~
+
+# ===== Logs =====
+*.log
+logs/
