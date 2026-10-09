@@ -12,7 +12,8 @@ dependencies = [
     "httpx",
     "jinja2",
     "pydantic",
-    "pytest"
+    "pytest",
+    "pillow"
 ]
 
 [tool.setuptools.packages.find]

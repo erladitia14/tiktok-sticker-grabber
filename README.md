@@ -18,10 +18,12 @@ Aplikasi web & API berkecepatan tinggi untuk mengekstrak dan mengunduh stiker, G
    - Tombol satu-ketukan **"📋 Tempel"** dari clipboard.
    - **Floating Download Bar**: Tombol unduh ZIP melayang di bagian bawah layar HP agar tidak perlu repot scroll ke atas.
    - Simpan langsung format `.webp` / `.gif` atau bundel semua dalam `.zip`.
-4. **Production Docker Ready**:
-   - Disediakan `Dockerfile` resmi berbasis `mcr.microsoft.com/playwright/python` dan `docker-compose.yml`.
-
----
+4. **🎬 Video to WhatsApp Animated Sticker (512x512 WebP)**:
+   - Konversi video TikTok langsung menjadi stiker bergerak WhatsApp resmi.
+   - Auto-resize kanvas 512x512 dengan transparansi dan optimasi ukuran (< 500 KB sesuai batas ketat WhatsApp).
+   - Dukungan fallback ganda: Fast-resolver API + Playwright browser extraction.
+5. **Production Docker Ready**:
+   - Disediakan `Dockerfile` resmi berbasis `mcr.microsoft.com/playwright/python` + `ffmpeg` dan `docker-compose.yml`.
 
 ## 📂 Struktur Project
 

@@ -3,101 +3,156 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>TikTok Sticker Downloader - Unduh Stiker Komen TikTok Gratis</title>
+  <title>TikTok Sticker Grabber</title>
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-  <div class="container">
-    <!-- Header -->
-    <header class="header">
-      <div class="brand">
-        <div class="logo-badge">TT</div>
-        <div>
-          <h1>TikTok Sticker Downloader</h1>
-          <p class="subtitle">Unduh stiker & reaksi gambar dari komentar TikTok tanpa login</p>
-        </div>
-      </div>
-      <div class="header-badges">
-        <span class="badge-free">100% Gratis</span>
-      </div>
-    </header>
-
-    <!-- Main Extractor Panel -->
-    <main class="panel">
-      <div class="input-card">
-        <label for="tiktok-url" class="input-label">Tautan Video TikTok</label>
-        <div class="input-group">
-          <input 
-            type="text" 
-            id="tiktok-url" 
-            placeholder="Tempel link video TikTok di sini..." 
-            autocomplete="off"
-            spellcheck="false"
-          />
-          <button class="btn btn-secondary btn-paste" onclick="pasteFromClipboard()" title="Tempel dari Clipboard">
-            📋 <span class="hide-on-mobile">Tempel</span>
-          </button>
-          <button class="btn btn-primary" id="btn-extract" onclick="startExtraction()">
-            <span id="btn-text">Cari Stiker</span>
-            <span class="spinner" id="btn-spinner"></span>
-          </button>
-        </div>
-
-        <div class="options-row">
-          <div class="scroll-select">
-            <span>Kedalaman Komentar:</span>
-            <select id="opt-scrolls">
-              <option value="3">Standar (~20 Komen)</option>
-              <option value="6" selected>Banyak (~50 Komen)</option>
-              <option value="12">Semua (~100+ Komen)</option>
-            </select>
-          </div>
-          <div class="server-status-tag">
-            🟢 Server Aktif
-          </div>
-        </div>
-      </div>
-
-      <!-- Results Toolbar -->
-      <div class="results-header" id="results-header" style="display: none;">
-        <div class="count-badge">
-          Ditemukan: <b id="result-count">0</b> stiker
-        </div>
-        <div class="results-actions">
-          <button class="btn btn-secondary btn-sm" onclick="selectAll(true)">Pilih Semua</button>
-          <button class="btn btn-secondary btn-sm" onclick="selectAll(false)">Batal</button>
-          <button class="btn btn-accent btn-sm hide-on-mobile" id="btn-download-top" onclick="downloadSelectedZip()">
-            📦 Unduh Semua (.ZIP)
-          </button>
-        </div>
-      </div>
-
-      <!-- Initial / Loading / Error Status -->
-      <div class="status-card" id="status-card">
-        <div class="status-icon" id="status-icon">🎁</div>
-        <h3 id="status-title">Tempel link video TikTok di atas</h3>
-        <p id="status-desc">Masukkan link video publik yang memiliki stiker di kolom komentarnya. Sistem otomatis mengekstrak semua stiker untuk kamu unduh.</p>
-      </div>
-
-      <!-- Gallery Grid -->
-      <div class="gallery-grid" id="gallery-grid" style="display: none;"></div>
-    </main>
-
-    <!-- Sticky Mobile Floating Download Bar -->
-    <div class="mobile-sticky-bar" id="mobile-sticky-bar" style="display: none;">
-      <div class="sticky-info">
-        <span id="mobile-selected-count">0</span> stiker terpilih
-      </div>
-      <button class="btn btn-accent btn-sm" id="btn-download-mobile" onclick="downloadSelectedZip()">
-        📦 Unduh (.ZIP)
-      </button>
+  <!-- macOS Top Menu Bar -->
+  <div class="macos-menubar">
+    <div class="menubar-left">
+      <span class="menubar-item active">Sticker Grabber</span>
+      <span class="menubar-item hide-on-mobile">File</span>
+      <span class="menubar-item hide-on-mobile">Edit</span>
+      <span class="menubar-item hide-on-mobile">View</span>
+      <span class="menubar-item hide-on-mobile">Window</span>
+      <span class="menubar-item hide-on-mobile">Help</span>
     </div>
+    <div class="menubar-right">
+      <span class="menubar-chip" id="menu-server-status">🟢 Engine Ready</span>
+      <span class="menubar-time" id="macos-clock">00:00</span>
+    </div>
+  </div>
 
-    <!-- Footer -->
-    <footer class="footer">
-      <span>TikTok Sticker Downloader &bull; Tanpa Aplikasi & Login</span>
-      <span>Cepat & Aman</span>
-    </footer>
+  <!-- macOS Desktop Container -->
+  <div class="desktop-workspace">
+    <!-- Main macOS App Window -->
+    <div class="macos-window">
+      <!-- Window Titlebar with Traffic Lights -->
+      <div class="window-titlebar">
+        <div class="traffic-lights">
+          <span class="traffic-dot close" title="Close"></span>
+          <span class="traffic-dot minimize" title="Minimize"></span>
+          <span class="traffic-dot zoom" title="Zoom"></span>
+        </div>
+        <div class="window-title">
+          <span class="app-glyph">✨</span>
+          <span>TikTok Sticker Grabber</span>
+        </div>
+        <div class="window-actions-spacer"></div>
+
+      <!-- Window Toolbar / Segmented Controls -->
+      <div class="window-toolbar">
+        <div class="segmented-control">
+          <button class="segment-btn active" id="tab-extractor" onclick="switchMode('extract')">
+            💬 Stiker Komen
+          </button>
+          <button class="segment-btn" id="tab-video" onclick="switchMode('video')">
+            🎬 Stiker WA Animasi
+          </button>
+        </div>
+        <div class="toolbar-hint hide-on-mobile">
+          Ekspor langsung format WebP 512x512 transparan
+        </div>
+      </div>
+
+      <!-- Window Content Area -->
+      <div class="window-content">
+        <!-- Input Card / Search Section -->
+        <div class="search-section">
+          <div class="url-input-container">
+            <span class="search-icon">🔍</span>
+            <input 
+              type="text" 
+              id="tiktok-url" 
+              placeholder="Tempel tautan video TikTok di sini... (https://www.tiktok.com/@...)" 
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <button class="macos-btn btn-glass btn-paste" onclick="pasteFromClipboard()" title="Tempel dari Clipboard">
+              📋 <span class="hide-on-mobile">Tempel</span>
+            </button>
+          </div>
+
+          <!-- Action Buttons Bar -->
+          <div class="action-buttons-bar">
+            <button class="macos-btn btn-primary" id="btn-extract" onclick="startExtraction()">
+              <span id="btn-text">Cari Stiker Komen</span>
+              <span class="spinner" id="btn-spinner"></span>
+            </button>
+            <button class="macos-btn btn-accent" id="btn-video-sticker" onclick="startVideoToSticker()">
+              <span id="btn-video-text">🎬 Buat Stiker Video (WA)</span>
+              <span class="spinner" id="btn-video-spinner" style="display: none;"></span>
+            </button>
+          </div>
+
+          <!-- Options Row (macOS Pop-up Buttons) -->
+          <div class="options-shelf">
+            <div class="shelf-item">
+              <label for="opt-scrolls">Kedalaman Komentar:</label>
+              <select id="opt-scrolls" class="macos-select">
+                <option value="3">Ringan (~20 Komentar)</option>
+                <option value="6" selected>Standar (~50 Komentar)</option>
+                <option value="12">Semua (~100+ Komentar)</option>
+              </select>
+            </div>
+            <div class="shelf-item">
+              <label for="opt-duration">Durasi Stiker WA:</label>
+              <select id="opt-duration" class="macos-select">
+                <option value="2.0">2 Detik (Ukuran Kecil)</option>
+                <option value="3.0" selected>3 Detik (Standar WA &lt; 500KB)</option>
+                <option value="4.0">4 Detik (Smooth)</option>
+              </select>
+            </div>
+            <div class="shelf-item hide-on-mobile">
+              <span class="shelf-badge">512×512 WebP &lt; 500KB</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Results Toolbar -->
+        <div class="results-toolbar" id="results-header" style="display: none;">
+          <div class="results-stats">
+            <span class="finder-icon">📁</span>
+            <span>Ditemukan: <b id="result-count">0</b> stiker</span>
+          </div>
+          <div class="results-controls">
+            <button class="macos-btn btn-sm btn-glass" onclick="selectAll(true)">Pilih Semua</button>
+            <button class="macos-btn btn-sm btn-glass" onclick="selectAll(false)">Batal</button>
+            <button class="macos-btn btn-sm btn-accent hide-on-mobile" id="btn-download-top" onclick="downloadSelectedZip()">
+              📦 Simpan Koleksi (.ZIP)
+            </button>
+          </div>
+        </div>
+
+        <!-- Status Placeholder / Empty State (macOS Finder style) -->
+        <div class="status-view" id="status-card">
+          <div class="status-art" id="status-icon">🪄</div>
+          <h3 id="status-title">Tempel tautan video TikTok</h3>
+          <p id="status-desc">
+            Masukkan link publik TikTok. Kamu bisa mengekstrak stiker dari kolom komentarnya atau mengonversi klip videonya langsung jadi stiker bergerak WhatsApp 512x512.
+          </p>
+        </div>
+
+        <!-- Gallery Grid (Finder Icon Grid) -->
+        <div class="finder-grid" id="gallery-grid" style="display: none;"></div>
+      </div>
+
+      <!-- Window Status Bar -->
+      <div class="window-statusbar">
+        <span class="status-left">Headless Engine • Playwright &amp; FFmpeg</span>
+        <span class="status-right" id="status-bar-info">Siap digunakan</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Sticky Floating Download Bar -->
+  <div class="mobile-sticky-dock" id="mobile-sticky-bar" style="display: none;">
+    <div class="dock-info">
+      <span id="mobile-selected-count">0</span> stiker terpilih
+    </div>
+    <button class="macos-btn btn-accent btn-sm" id="btn-download-mobile" onclick="downloadSelectedZip()">
+      📦 Unduh .ZIP
+    </button>
   </div>
 
   <script src="/static/app.js"></script>

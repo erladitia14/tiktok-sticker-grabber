@@ -126,6 +126,86 @@ async function startExtraction() {
     spinner.style.display = "none";
   }
 }
+async function startVideoToSticker() {
+  const urlInput = document.getElementById("tiktok-url");
+  const url = urlInput.value.trim();
+  const duration = parseFloat(document.getElementById("opt-duration") ? document.getElementById("opt-duration").value : 3.0) || 3.0;
+
+  if (!url) {
+    alert("Tempel URL video TikTok terlebih dahulu!");
+    urlInput.focus();
+    return;
+  }
+
+  const btn = document.getElementById("btn-video-sticker");
+  const btnText = document.getElementById("btn-video-text");
+  const spinner = document.getElementById("btn-video-spinner");
+  const statusCard = document.getElementById("status-card");
+  const resultsHeader = document.getElementById("results-header");
+  const galleryGrid = document.getElementById("gallery-grid");
+  const mobileBar = document.getElementById("mobile-sticky-bar");
+
+  btn.disabled = true;
+  btnText.innerText = "Mengonversi...";
+  spinner.style.display = "inline-block";
+
+  statusCard.style.display = "block";
+  document.getElementById("status-icon").innerText = "🎬";
+  document.getElementById("status-title").innerText = "Mengubah video menjadi stiker WhatsApp...";
+  document.getElementById("status-desc").innerText = "Mengunduh klip video, memotong, dan mengompres ke WebP animasi 512x512 (< 500KB)...";
+
+  resultsHeader.style.display = "none";
+  galleryGrid.style.display = "none";
+  mobileBar.style.display = "none";
+
+  try {
+    const res = await fetch("/api/video-sticker", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url, duration, fps: 10 })
+    });
+
+    if (!res.ok) {
+      throw new Error(await responseErrorMessage(res, "Gagal mengonversi video ke stiker."));
+    }
+
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+
+    // Get filename from header or fallback
+    let filename = `tiktok_sticker_${Date.now()}.webp`;
+    const disposition = res.headers.get("content-disposition");
+    if (disposition && disposition.includes("filename=")) {
+      const match = disposition.match(/filename="?([^"]+)"?/);
+      if (match && match[1]) filename = match[1];
+    }
+
+    // Trigger browser download
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    const sizeKb = (blob.size / 1024).toFixed(1);
+    document.getElementById("status-icon").innerText = "🎉";
+    document.getElementById("status-title").innerText = "Stiker WhatsApp Siap!";
+    document.getElementById("status-desc").innerText = `Berhasil diunduh (${sizeKb} KB, WebP Animasi 512x512). Siap dikirim langsung ke WhatsApp.`;
+
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+  } catch (err) {
+    statusCard.style.display = "block";
+    document.getElementById("status-icon").innerText = "⚠️";
+    document.getElementById("status-title").innerText = "Gagal Membuat Stiker Video";
+    document.getElementById("status-desc").innerText = err.message + " (Tips: Pastikan URL video publik & dapat diakses).";
+  } finally {
+    btn.disabled = false;
+    btnText.innerText = "🎬 Buat Stiker Video";
+    spinner.style.display = "none";
+  }
+}
+
 
 function responseErrorMessage(response, fallback) {
   return response.json()
@@ -326,5 +406,36 @@ async function downloadSelectedZip() {
     alert("Gagal download ZIP: " + err.message);
   } finally {
     updateSelectedCount();
+  }
+}
+
+function updateMacClock() {
+  const clockEl = document.getElementById("macos-clock");
+  if (!clockEl) return;
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2, "0");
+  const m = String(now.getMinutes()).padStart(2, "0");
+  clockEl.innerText = `${h}:${m}`;
+}
+setInterval(updateMacClock, 1000);
+updateMacClock();
+
+function switchMode(mode) {
+  const tabExt = document.getElementById("tab-extractor");
+  const tabVid = document.getElementById("tab-video");
+  const btnExt = document.getElementById("btn-extract");
+  const btnVid = document.getElementById("btn-video-sticker");
+  const statusInfo = document.getElementById("status-bar-info");
+
+  if (mode === "video") {
+    if (tabVid) tabVid.classList.add("active");
+    if (tabExt) tabExt.classList.remove("active");
+    if (btnVid) btnVid.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    if (statusInfo) statusInfo.innerText = "Mode: Konversi Video ke Stiker WA (512x512 WebP)";
+  } else {
+    if (tabExt) tabExt.classList.add("active");
+    if (tabVid) tabVid.classList.remove("active");
+    if (btnExt) btnExt.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    if (statusInfo) statusInfo.innerText = "Mode: Ekstraksi Stiker Komen";
   }
 }

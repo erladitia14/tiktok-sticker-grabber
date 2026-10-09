@@ -5,11 +5,15 @@ import time
 import json
 import zipfile
 import asyncio
+import tempfile
+import subprocess
+import shutil
 from typing import Optional, List
 from urllib.parse import urljoin, urlsplit
 from contextlib import asynccontextmanager
 
 import httpx
+from PIL import Image
 from fastapi import FastAPI, Request, HTTPException, BackgroundTasks, UploadFile, File
 from fastapi.responses import HTMLResponse, StreamingResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -146,6 +150,61 @@ class DownloadZipItem(BaseModel):
 
 class DownloadZipRequest(BaseModel):
     items: List[DownloadZipItem]
+
+class VideoStickerRequest(BaseModel):
+    url: str
+    duration: Optional[float] = 3.0
+    fps: Optional[int] = 10
+
+def convert_video_file_to_sticker(video_path: str, max_duration: float = 3.0, fps: int = 10, target_size: int = 512, max_bytes: int = 500 * 1024) -> bytes:
+    duration_sec = max(0.5, min(float(max_duration or 3.0), 5.0))
+    fps_val = max(5, min(int(fps or 10), 15))
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        frame_pattern = os.path.join(tmpdir, "f_%04d.png")
+        cmd = [
+            "ffmpeg", "-y", "-i", video_path,
+            "-t", str(duration_sec),
+            "-r", str(fps_val),
+            frame_pattern
+        ]
+        try:
+            res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+        except Exception as e:
+            raise RuntimeError(f"Gagal mengekstrak frame video: {e}")
+
+        pngs = sorted([os.path.join(tmpdir, f) for f in os.listdir(tmpdir) if f.endswith(".png")])
+        if not pngs:
+            raise RuntimeError("Tidak ada frame video yang berhasil diekstrak.")
+
+        frames = []
+        for p in pngs:
+            with Image.open(p) as img:
+                img.thumbnail((target_size, target_size), Image.Resampling.LANCZOS)
+                canvas = Image.new("RGBA", (target_size, target_size), (0, 0, 0, 0))
+                offset = ((target_size - img.width) // 2, (target_size - img.height) // 2)
+                canvas.paste(img, offset)
+                frames.append(canvas)
+
+        delay_ms = int(1000 / fps_val)
+        for quality in (75, 55, 35, 20):
+            out_file = os.path.join(tmpdir, f"sticker_q{quality}.webp")
+            frames[0].save(
+                out_file,
+                format="WEBP",
+                save_all=True,
+                append_images=frames[1:],
+                duration=delay_ms,
+                loop=0,
+                quality=quality,
+                method=4
+            )
+            if os.path.getsize(out_file) <= max_bytes or quality == 20:
+                with open(out_file, "rb") as f:
+                    return f.read()
+
+        with open(out_file, "rb") as f:
+            return f.read()
 
 class CookieImportRequest(BaseModel):
     cookies_json: str
@@ -513,3 +572,120 @@ async def create_download_zip(payload: DownloadZipRequest):
             "X-Download-Failed": str(failed),
         }
     )
+
+@app.post("/api/video-sticker")
+async def create_video_sticker(payload: VideoStickerRequest):
+    url = payload.url.strip()
+    try:
+        parsed_url = urlsplit(url)
+        hostname = (parsed_url.hostname or "").lower().rstrip(".")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Harap masukkan URL video TikTok yang valid.")
+    if parsed_url.scheme not in {"http", "https"} or not (hostname == "tiktok.com" or hostname.endswith(".tiktok.com")):
+        raise HTTPException(status_code=400, detail="Harap masukkan URL video TikTok yang valid.")
+
+    direct_video_url = None
+    title = "tiktok_video"
+
+    # Step 1: Try public API resolver (fast path, no browser required)
+    try:
+        resolver_api = f"https://www.tikwm.com/api/?url={url}"
+        async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+            res = await client.get(resolver_api, headers={"User-Agent": "Mozilla/5.0"})
+            if res.status_code == 200:
+                data = res.json()
+                if data.get("code") == 0 and data.get("data"):
+                    item_data = data["data"]
+                    direct_video_url = item_data.get("play") or item_data.get("wmplay")
+                    if item_data.get("title"):
+                        title = re.sub(r"[^A-Za-z0-9_-]", "_", item_data["title"])[:30] or "tiktok_video"
+    except Exception as e:
+        print(f"[VideoSticker] Tikwm error: {e}")
+
+    # Step 2: Fallback to Playwright if resolver fails or browser is available
+    if not direct_video_url and browser_instance:
+        async with semaphore:
+            context_opts = {
+                "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                "viewport": {"width": 1280, "height": 850}
+            }
+            if os.path.exists(AUTH_FILE):
+                try:
+                    context_opts["storage_state"] = AUTH_FILE
+                except Exception:
+                    pass
+
+            context: BrowserContext = await browser_instance.new_context(**context_opts)
+            page = await context.new_page()
+            media_urls = []
+
+            async def on_resp(resp):
+                ct = (resp.headers.get("content-type") or "").lower()
+                if "video" in ct and resp.status in {200, 206}:
+                    media_urls.append(resp.url)
+
+            page.on("response", on_resp)
+            try:
+                await page.goto(url, wait_until="domcontentloaded", timeout=25000)
+                await asyncio.sleep(2)
+                # Check video tag directly in DOM
+                src = await page.evaluate('''() => {
+                    const v = document.querySelector('video');
+                    return v ? (v.currentSrc || v.src) : null;
+                }''')
+                if src:
+                    direct_video_url = src
+                elif media_urls:
+                    direct_video_url = media_urls[0]
+            except Exception as e:
+                print(f"[VideoSticker] Browser fallback failed: {e}")
+            finally:
+                await context.close()
+
+    if not direct_video_url:
+        raise HTTPException(
+            status_code=502,
+            detail="Tidak dapat menemukan sumber video TikTok. Pastikan video publik dan tautan valid."
+        )
+
+    # Step 3: Download video bytes to temporary file
+    with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp_video:
+        temp_video_path = tmp_video.name
+
+    try:
+        async with httpx.AsyncClient(timeout=25.0, follow_redirects=True) as dl_client:
+            dl_resp = await dl_client.get(direct_video_url, headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                "Referer": "https://www.tiktok.com/"
+            })
+            if dl_resp.status_code not in {200, 206} or len(dl_resp.content) < 1000:
+                raise HTTPException(status_code=502, detail="Gagal mengunduh file video dari sumber TikTok.")
+            with open(temp_video_path, "wb") as f:
+                f.write(dl_resp.content)
+
+        # Step 4: Convert to WhatsApp-compliant animated WebP
+        duration = payload.duration or 3.0
+        fps = payload.fps or 10
+        sticker_bytes = convert_video_file_to_sticker(temp_video_path, max_duration=duration, fps=fps)
+
+        filename = f"sticker_{title}_{int(time.time())}.webp"
+        return Response(
+            content=sticker_bytes,
+            media_type="image/webp",
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"',
+                "X-Sticker-Size": str(len(sticker_bytes)),
+                "X-WhatsApp-Compliant": "true" if len(sticker_bytes) < 500 * 1024 else "false"
+            }
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[VideoSticker] Conversion error: {e}")
+        raise HTTPException(status_code=500, detail=f"Gagal mengonversi video menjadi stiker: {str(e)}")
+    finally:
+        if os.path.exists(temp_video_path):
+            try:
+                os.remove(temp_video_path)
+            except Exception:
+                pass

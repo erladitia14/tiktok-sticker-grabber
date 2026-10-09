@@ -10,9 +10,10 @@ ENV PYTHONUNBUFFERED=1 \
     MAX_CONCURRENT=3
 
 # Copy requirements and install
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -rf /var/lib/apt/lists/*
+
 COPY web_app/requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
-
 # Copy application source
 COPY web_app /app/web_app
 COPY extension /app/extension
